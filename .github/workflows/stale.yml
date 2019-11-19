@@ -16,4 +16,32 @@ jobs:
         stale-issue-message: 'This issue shows no activity for 21 days. It''s labeled stale until changed.'
         stale-issue-label: 'stale'
         days-before-stale: 1
+        days-before-close: 7
 
+    - name: Remove stale label
+      if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+      uses: actions/github-script@0.2.0
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }} 
+        script: |
+          // Fetch the list of labels attached to the issue that 
+          // triggered the workflow
+
+          const openIssues = github.issues.listLabelsOnIssue.endpoint.merge({
+            ...context.repo,
+            issue_number: context.issue.number
+            });
+            const labels = await github.paginate(openIssues);
+
+            for (const label of labels) {
+              // If the issue has a label named 'stale', remove it because
+              // of new comment
+              if (label.name == 'stale') {
+                await github.issues.removeLabel({
+                  ...context.repo,
+                  issue_number: context.issue.number,
+                  name: 'stale'
+                  })
+                  return;
+              }
+            }
